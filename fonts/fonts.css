@@ -1,0 +1,86 @@
+/* === Doran Pro V3 — Headings & Titles === */
+@font-face {
+  font-family: 'Doran';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('doran/Doran-Light.woff2') format('woff2'),
+       url('doran/Doran-Light.woff') format('woff');
+}
+@font-face {
+  font-family: 'Doran';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('doran/Doran-Regular.woff2') format('woff2'),
+       url('doran/Doran-Regular.woff') format('woff');
+}
+@font-face {
+  font-family: 'Doran';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('doran/Doran-Medium.woff2') format('woff2'),
+       url('doran/Doran-Medium.woff') format('woff');
+}
+@font-face {
+  font-family: 'Doran';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('doran/Doran-Bold.woff2') format('woff2'),
+       url('doran/Doran-Bold.woff') format('woff');
+}
+@font-face {
+  font-family: 'Doran';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('doran/Doran-ExtraBold.woff2') format('woff2'),
+       url('doran/Doran-ExtraBold.woff') format('woff');
+}
+@font-face {
+  font-family: 'Doran';
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url('doran/Doran-Black.woff2') format('woff2'),
+       url('doran/Doran-Black.woff') format('woff');
+}
+
+/* === Vazirmatn — Body Text & Descriptions === */
+@font-face {
+  font-family: 'Vazirmatn';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('vazir/Vazirmatn_Light.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Vazirmatn';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('vazir/Vazirmatn_Regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Vazirmatn';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('vazir/Vazirmatn_Medium.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Vazirmatn';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('vazir/Vazirmatn_SemiBold.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Vazirmatn';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('vazir/Vazirmatn_Bold.ttf') format('truetype');
+}

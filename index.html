@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" data-lang="fa">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>درجات ارتش جمهوری اسلامی ایران</title>
+<meta name="description" content="راهنمای جامع درجات و سلسله‌مراتب ارتش جمهوری اسلامی ایران">
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="grain-overlay"></div>
+<div id="progressBarWrap"><div id="progressBar"></div></div>
+<section id="hero">
+<canvas id="heroCanvas"></canvas>
+<div class="hero-vignette"></div>
+<div class="hero-frame"></div>
+<div class="hero-content">
+<div class="hero-emblem">
+<img class="hero-logo" src="images/Seal_of_the_Islamic_Republic_of_Iran_Army.svg" alt="نشان ارتش جمهوری اسلامی ایران">
+</div>
+<div class="hero-text">
+<span class="hero-label" data-i18n="heroLabel">Islamic Republic of Iran Army</span>
+<h1 class="hero-title" data-i18n="heroTitle">درجات <span>ارتش جمهوری اسلامی ایران</span></h1>
+<p class="hero-subtitle">Ranks, Structure &amp; Heritage</p>
+<p class="hero-sub" data-i18n="heroSub">شناخت درجات، سلسله‌مراتب و ساختار فرماندهی ارتش — از سرباز تا ارتشبد</p>
+</div>
+</div>
+<div id="scrollIndicator"><span data-i18n="scrollText">EXPLORE</span><div class="scroll-arrow"></div></div>
+</section>
+<div id="heroSpacer"></div>
+<div id="siteContent">
+<nav id="stickyNav"><div class="nav-inner">
+<a class="nav-brand" href="#hero" aria-label="Army Ranks home">
+<img class="nav-brand-emblem" src="images/Seal_of_the_Islamic_Republic_of_Iran_Army.svg" alt="">
+<span class="nav-brand-name" data-i18n="heroLabel">ارتش جمهوری اسلامی ایران</span>
+</a>
+<button class="lang-toggle" id="langToggle">EN</button>
+</div></nav>
+<section id="intro-section" data-section-id="intro-section" class="cat-section" style="padding-top:3rem">
+<div class="cat-intro reveal" style="max-width:900px">
+<div class="cat-intro-inner" style="text-align:center">
+<span class="cat-label" style="color:var(--gold)" data-i18n="overviewLabel">OVERVIEW</span>
+<h2 class="cat-title" style="font-size:clamp(1.6rem,4vw,2.5rem)" data-i18n="overviewTitle">سلسله‌مراتب درجات نظامی</h2>
+<div class="cat-rule" style="background:var(--gold);margin:0 auto 1.5rem"></div>
+<p class="cat-desc" style="max-width:700px;margin:0 auto" data-i18n="overviewDesc">ارتش جمهوری اسلامی ایران دارای ۲۲ درجه نظامی در پنج گروه اصلی است: سربازان، درجه‌داران، افسران جزء، افسران ارشد و امیران. هر درجه نشان‌دهنده سطح تخصص، مسئولیت و اقتدار فرماندهی فرد در سلسله‌مراتب نظامی است.</p>
+</div>
+</div>
+</section>
+
+<div id="categoriesContainer"></div>
+<section class="media-section">
+<div class="media-header reveal">
+<span class="cat-label" style="color:var(--gold)" data-i18n="mediaLabel">MEDIA</span>
+<h2 data-i18n="mediaTitle">آشنایی با درجات ارتش</h2>
+<p data-i18n="mediaDesc">ویدئوی آشنایی با ساختار درجات و سلسله‌مراتب فرماندهی ارتش جمهوری اسلامی ایران</p>
+</div>
+<div class="media-placeholder reveal">
+<div class="media-card"><div class="media-card-inner"><div class="media-play" role="button" aria-label="پخش ویدئو">&#9654;</div><span class="media-label" data-i18n="mediaPlayLabel">آشنایی با درجات ارتش</span></div></div>
+</div>
+</section>
+<section id="timeline-section" class="timeline-section" data-section-id="timeline-section">
+<div class="timeline-header reveal">
+<span class="cat-label" style="color:var(--gold)" data-i18n="hierarchyLabel">HIERARCHY</span>
+<h2 data-i18n="hierarchyTitle">سلسله‌مراتب درجات</h2>
+<p data-i18n="hierarchyDesc">سفر از پایین‌ترین درجه تا عالی‌ترین سطح فرماندهی نظامی</p>
+</div>
+<div id="timelineRanks"></div>
+</section>
+<section id="org-section" class="org-section" data-section-id="org-section">
+<div class="org-header reveal">
+<span class="cat-label" style="color:var(--gold)" data-i18n="structureLabel">STRUCTURE</span>
+<h2 data-i18n="structureTitle">ساختار سلسله‌مراتبی</h2>
+<p data-i18n="structureDesc">نگاهی به سطوح مختلف فرماندهی و سازمان‌دهی نیروهای مسلح</p>
+</div>
+<div id="orgChart"></div>
+</section>
+<footer><p data-i18n="footerText">درجات ارتش جمهوری اسلامی ایران — اطلاعات بر اساس منابع عمومی</p></footer>
+</div><!-- /siteContent -->
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
