@@ -11,7 +11,15 @@ var FA_DIGITS={0:"\u06f0",1:"\u06f1",2:"\u06f2",3:"\u06f3",4:"\u06f4",5:"\u06f5"
 function faNu(n){return String(n).replace(/[0-9]/g,function(d){return FA_DIGITS[d]})}
 
 /* === i18n === */
-var LANG=localStorage.getItem("lang")||"fa";
+function readStoredLanguage(){
+  try { return localStorage.getItem("lang") || "fa"; }
+  catch (e) { return "fa"; }
+}
+function storeLanguage(lang){
+  try { localStorage.setItem("lang", lang); }
+  catch (e) { /* Storage may be unavailable in private or restricted contexts. */ }
+}
+var LANG=readStoredLanguage();
 var I18N={
   heroLabel:{fa:"ارتش جمهوری اسلامی ایران",en:"Islamic Republic of Iran Army"},
   heroTitle:{fa:"درجات <span>ارتش جمهوری اسلامی ایران</span>",en:"<span>Ranks of the</span> Islamic Republic of Iran Army"},
@@ -69,7 +77,7 @@ function navItems(){
 }
 
 function switchLang(lang){
-  LANG=lang;localStorage.setItem("lang",lang);
+  LANG=lang;storeLanguage(lang);
   var h=document.documentElement;
   h.setAttribute("lang",lang==="fa"?"fa":"en");
   h.setAttribute("dir",lang==="fa"?"rtl":"ltr");
@@ -91,8 +99,9 @@ function switchLang(lang){
 }
 
 function rebuildAll(){
-  /* close detail if open */
+  /* Close transient UI and release observers before rebuilding dynamic sections. */
   if(dp&&dp.classList&&dp.classList.contains("open"))closeDetail();
+  disconnectObservers();
   /* clear containers */
   var cc=$("#categoriesContainer");if(cc)cc.innerHTML="";
   var tl=$("#timelineRanks");if(tl)tl.innerHTML="";
@@ -114,12 +123,38 @@ function rebuildAll(){
 }
 
 var ro;
+var activeObservers=[];
+function disconnectObservers(){
+  activeObservers.forEach(function(observer){ try { observer.disconnect(); } catch(e) {} });
+  activeObservers=[];
+  if(ro){ro.disconnect();ro=null;}
+}
 function setupReveal(){
-  if(PR){$$(".reveal").forEach(function(e){e.classList.add("revealed")});return;}
-  ro=new IntersectionObserver(function(en){en.forEach(function(e){
-    if(e.isIntersecting){e.target.classList.add("revealed");ro.unobserve(e.target)}
-  })},{threshold:0.12,rootMargin:"0px 0px -40px 0px"});
-  $$(".reveal").forEach(function(e){ro.observe(e)});
+  var items=$$(".reveal");
+  /* Content-first rendering: no copy should depend on a scroll observer to become visible. */
+  document.body.classList.remove("reveal-enabled");
+  items.forEach(function(e){e.classList.add("revealed")});
+  if(PR||!("IntersectionObserver" in window)){
+    document.body.classList.remove("reveal-enabled");
+    items.forEach(function(e){e.classList.add("revealed")});
+    return;
+  }
+  if(ro)ro.disconnect();
+  /* A zero threshold is important for tall rank layouts that are taller than the viewport. */
+  ro=new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if(entry.isIntersecting || entry.boundingClientRect.top < window.innerHeight){
+        entry.target.classList.add("revealed");
+        ro.unobserve(entry.target);
+      }
+    });
+  },{threshold:0,rootMargin:"0px 0px 80px 0px"});
+  document.body.classList.add("reveal-enabled");
+  items.forEach(function(e){
+    var rect=e.getBoundingClientRect();
+    if(rect.top < window.innerHeight && rect.bottom > 0){e.classList.add("revealed")}
+    else{ro.observe(e)}
+  });
 }
 
 /* Hero canvas particles */
@@ -137,7 +172,9 @@ function heroParticles(){
       phase:Math.random()*Math.PI*2
     });
   }
+  var frameId=null;
   function draw(){
+    if(document.hidden){frameId=null;return;}
     ctx.clearRect(0,0,canvas.width,canvas.height);
     var t=Date.now()*0.001;
     for(var i=0;i<particles.length;i++){
@@ -151,8 +188,9 @@ function heroParticles(){
       ctx.fillStyle="rgba(201,168,76,"+Math.max(0,flicker)+")";
       ctx.fill();
     }
-    requestAnimationFrame(draw);
+    frameId=requestAnimationFrame(draw);
   }
+  document.addEventListener("visibilitychange",function(){if(document.hidden){if(frameId!==null)cancelAnimationFrame(frameId);frameId=null;}else if(frameId===null)draw();});
   draw();
 }
 
@@ -170,30 +208,45 @@ function buildNavLinks(){
     a.href="#"+it.id;a.setAttribute("data-section",it.id);
     a.addEventListener("click",function(e){
       e.preventDefault();var tg=document.getElementById(it.id);
-      if(tg){var off=navEl.offsetHeight+16;
-        window.scrollTo({top:absTop(tg)-off,behavior:PR?"auto":"smooth"});
+      if(tg){
+        var top=window.scrollY+tg.getBoundingClientRect().top-(navEl ? navEl.offsetHeight : 0)-12;
+        window.scrollTo({top:Math.max(0,top),behavior:PR?"auto":"smooth"});
       }
     });
     ni.appendChild(a);nl.push(a);
   });
 }
 function setupNavObs(){
-  var secs=$$("[data-section-id]");
-  var intersecting={};
-  var o=new IntersectionObserver(function(en){
-    en.forEach(function(e){
-      var id=e.target.getAttribute("data-section-id");
-      if(e.isIntersecting){intersecting[id]=e.intersectionRatio;}
-      else{delete intersecting[id];}
+  /* Scroll-spy based on the section crossing a stable line below the sticky nav.
+     Unlike intersection-ratio ranking, this remains reliable for very tall sections. */
+  var sections=navItems().map(function(it){return document.getElementById(it.id)}).filter(Boolean);
+  if(!sections.length)return;
+  var ticking=false;
+  function updateActive(){
+    ticking=false;
+    var line=(navEl ? navEl.getBoundingClientRect().height : 0)+24;
+    var current=sections[0];
+    sections.forEach(function(sec){
+      if(sec.getBoundingClientRect().top<=line)current=sec;
     });
-    /* pick section with highest intersection ratio */
-    var best=null,bestR=-1;
-    for(var k in intersecting){if(intersecting[k]>bestR){bestR=intersecting[k];best=k;}}
-    if(best){
-      nl.forEach(function(l){l.classList.toggle("active",l.getAttribute("data-section")===best)});
-    }
-  },{threshold:[0,0.1,0.25,0.5],rootMargin:"-80px 0px -60% 0px"});
-  secs.forEach(function(s){o.observe(s)});
+    nl.forEach(function(link){
+      var active=link.getAttribute("data-section")===current.id;
+      link.classList.toggle("active",active);
+      if(active)link.setAttribute("aria-current","location");
+      else link.removeAttribute("aria-current");
+    });
+  }
+  function onScroll(){
+    if(!ticking){ticking=true;window.requestAnimationFrame(updateActive)}
+    /* Safety net: never leave text hidden if a browser skips an observer callback after a jump. */
+    $$("body.reveal-enabled .reveal:not(.revealed)").forEach(function(node){
+      if(node.getBoundingClientRect().top<window.innerHeight+80)node.classList.add("revealed");
+    });
+  }
+  window.addEventListener("scroll",onScroll,{passive:true});
+  window.addEventListener("resize",onScroll,{passive:true});
+  activeObservers.push({disconnect:function(){window.removeEventListener("scroll",onScroll);window.removeEventListener("resize",onScroll)}});
+  updateActive();
 }
 function handleNavVis(){
   var hero=$("#hero"),th=hero.offsetHeight-100;
@@ -214,22 +267,23 @@ function setupProgress(){
 /* Hero parallax — logo moves right, text reveals */
 function setupParallax(){
   if(PR)return;
-  var logo=$(".hero-logo"),text=$(".hero-text"),hero=$("#hero");
-  if(!logo||!text)return;
-  var wrap=text.parentElement;
+  var logo=$(".hero-logo"),hero=$("#hero"),text=$(".hero-text");
+  if(!logo||!hero||!text)return;
+  /* Keep the hero copy readable at page load; only the emblem moves with scroll. */
+  text.style.maxWidth="600px";
+  text.style.opacity="1";
+  text.style.overflow="visible";
+  text.style.whiteSpace="normal";
+  var ticking=false;
+  function update(){
+    ticking=false;
+    var p=Math.max(0,Math.min(1,window.scrollY/Math.max(1,hero.offsetHeight)));
+    logo.style.transform="scale("+(1-p*0.25)+")";
+  }
   window.addEventListener("scroll",function(){
-    var sc=window.scrollY,h=hero.offsetHeight;
-    if(sc>=h)return;
-    var p=Math.min(1,sc/h);
-    /* logo scales from 1→0.55 */
-    logo.style.transform="scale("+(1-p*0.45)+")";
-    /* text reveals after 15% scroll, fully shown at 85% */
-    var tp=Math.max(0,Math.min(1,(p-0.15)/0.7));
-    text.style.maxWidth=(tp*600)+"px";
-    text.style.opacity=tp;
-    wrap.style.gap=(tp*2)+"rem";
-    if(tp>=1){text.style.overflow="visible";text.style.whiteSpace="normal"}
+    if(!ticking){ticking=true;window.requestAnimationFrame(update)}
   },{passive:true});
+  update();
 }
 
 /* Scroll indicator */
@@ -301,6 +355,7 @@ function setupCinematicScroll(){
     });
   },{threshold:0.12,rootMargin:"-5% 0px -5% 0px"});
   $$(".cinematic-panel").forEach(function(p){observer.observe(p)});
+  activeObservers.push(observer);
   /* Ken Burns slow zoom + scroll progress bar (only bind once) */
   if(!_cineScrollBound){
     _cineScrollBound=true;
@@ -312,8 +367,9 @@ function setupCinematicScroll(){
             var img=sec.querySelector(".cinematic-image img");
             if(!img)return;
             var rect=sec.getBoundingClientRect();
-            var scrollable=rect.height-window.innerHeight;
-            if(scrollable<=0)return;
+            var imageHeight=img.parentElement.getBoundingClientRect().height;
+            var scrollable=sec.offsetHeight-imageHeight;
+            if(scrollable<=0){img.style.transform="scale(1)";return;}
             var progress=Math.max(0,Math.min(1,-rect.top/scrollable));
             img.style.transform="scale("+(1+progress*0.12)+")";
             var fill=sec.querySelector(".cinematic-progress-fill");
@@ -344,16 +400,17 @@ function renderTimeline(){
     if(e.isIntersecting){$$(".tl-node.active").forEach(function(n){n.classList.remove("active")});e.target.classList.add("active")}
   })},{threshold:0.6});
   $$(".tl-node",ctr).forEach(function(n){ao.observe(n)});
+  activeObservers.push(ao);
 }
 
 /* Detail panel */
-var dp,dox;
+var dp,dox,detailKeyHandler=null;
 function buildDetail(){
   /* remove old if exists */
   if(dox&&dox.parentNode)dox.parentNode.removeChild(dox);
   if(dp&&dp.parentNode)dp.parentNode.removeChild(dp);
   dox=el("div","detail-overlay");dox.addEventListener("click",closeDetail);
-  dp=el("div","detail-panel");dp.setAttribute("role","dialog");dp.setAttribute("aria-label","Detail");
+  dp=el("div","detail-panel");dp.setAttribute("role","dialog");dp.setAttribute("aria-modal","true");dp.setAttribute("aria-label",LANG==="fa"?"جزئیات درجه":"Rank details");dp.setAttribute("tabindex","-1");
   dp.innerHTML='<button class="detail-close" aria-label="'+t("detailClose")+'">&#10005;</button><div class="detail-content"><div class="detail-insignia-wrap"><img class="detail-insignia" src="" alt=""></div><div class="detail-body"><span class="detail-cat-badge"></span><h2 class="detail-name"></h2><span class="detail-name-en"></span><div class="detail-rule"></div><p class="detail-desc"></p><span class="detail-order"></span></div></div><div class="detail-nav"><button class="detail-prev" aria-label="'+t("detailPrevAria")+'">'+t("detailPrev")+'</button><button class="detail-next" aria-label="'+t("detailNextAria")+'">'+t("detailNext")+'</button></div>';
   document.body.appendChild(dox);document.body.appendChild(dp);
   $(".detail-close",dp).addEventListener("click",closeDetail);
@@ -365,9 +422,17 @@ function buildDetail(){
     var id=dp.getAttribute("data-current-id"),idx=ranks.findIndex(function(r){return r.id===id});
     if(idx<ranks.length-1)openDetail(ranks[idx+1]);
   });
-  document.addEventListener("keydown",function(e){
+  if(detailKeyHandler)document.removeEventListener("keydown",detailKeyHandler);
+  detailKeyHandler=function(e){
     if(!dp.classList.contains("open"))return;
-    if(e.key==="Escape")closeDetail();
+    if(e.key==="Escape"){e.preventDefault();closeDetail();return;}
+    if(e.key==="Tab"){
+      var focusable=$$('button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',dp).filter(function(node){return node.offsetParent!==null;});
+      if(!focusable.length){e.preventDefault();dp.focus();return;}
+      var first=focusable[0],last=focusable[focusable.length-1];
+      if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+      else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+    }
     if(LANG==="fa"){
       if(e.key==="ArrowLeft")$(".detail-next",dp).click();
       if(e.key==="ArrowRight")$(".detail-prev",dp).click();
@@ -375,9 +440,12 @@ function buildDetail(){
       if(e.key==="ArrowLeft")$(".detail-prev",dp).click();
       if(e.key==="ArrowRight")$(".detail-next",dp).click();
     }
-  });
+  };
+  document.addEventListener("keydown",detailKeyHandler);
 }
+var lastFocusedElement=null;
 function openDetail(r){
+  if(!dp.classList.contains("open"))lastFocusedElement=document.activeElement;
   var m=CAT_META[r.category];
   dp.setAttribute("data-current-id",r.id);
   $(".detail-insignia",dp).src=r.insignia;$(".detail-insignia",dp).alt=r.nameFa;
@@ -390,17 +458,65 @@ function openDetail(r){
   $(".detail-prev",dp).style.visibility=idx>0?"visible":"hidden";
   $(".detail-next",dp).style.visibility=idx<ranks.length-1?"visible":"hidden";
   dox.classList.add("open");dp.classList.add("open");document.body.style.overflow="hidden";
+  var closeButton=$(".detail-close",dp);if(closeButton)closeButton.focus();
 }
-function closeDetail(){dox.classList.remove("open");dp.classList.remove("open");document.body.style.overflow=""}
+function closeDetail(){
+  if(!dp||!dox)return;
+  dox.classList.remove("open");dp.classList.remove("open");document.body.style.overflow="";
+  if(lastFocusedElement&&typeof lastFocusedElement.focus==="function")lastFocusedElement.focus();
+  lastFocusedElement=null;
+}
 
-/* Org section */
+/* Org section: personnel ranges supplied for this project; icons are a visual scale only. */
 function renderOrg(){
   var ctr=$("#orgChart");if(!ctr||typeof hierarchyData==="undefined")return;
-  hierarchyData.forEach(function(it){
-    var nd=el("div","org-node reveal");
-    nd.innerHTML='<div class="org-level"><span class="org-name">'+(LANG==="fa"?it.name:it.nameEn)+'</span><span class="org-name-en">'+it.nameEn+'</span></div><div class="org-details"><span class="org-unit">'+it.unit+'</span><span class="org-soldiers">'+it.soldiers+'</span></div><p class="org-desc">'+it.desc+'</p>';
+  hierarchyData.forEach(function(it,index){
+    var nd=el("article","org-node reveal org-scroll-node");
+    nd.setAttribute("data-level",String(index));
+    nd.setAttribute("data-org-id",it.id||String(index));
+    var scaleCount=Number(it.scale)||6;
+    var icons='';
+    for(var i=0;i<scaleCount;i++){
+      icons += '<span class="soldier-icon" aria-hidden="true"><svg viewBox="0 0 24 30" focusable="false"><circle cx="12" cy="5" r="4"/><path d="M5 13Q5 10 8 10H16Q19 10 19 13L21 23H16L15 17V29H9V17L8 23H3Z"/></svg></span>';
+    }
+    var name=LANG==="fa"?it.name:it.nameEn;
+    var range=LANG==="fa"?it.rangeFa:it.rangeEn;
+    nd.innerHTML='<div class="org-card-top"><span class="org-step">'+String(index+1).padStart(2,'0')+'</span><span class="org-kicker">'+(LANG==="fa"?'سطح سازمانی':'ORGANIZATIONAL ECHELON')+'</span></div>'+
+      '<div class="org-level"><span class="org-name"></span><span class="org-name-en"></span></div>'+
+      '<div class="org-range-row"><span class="org-range-label">'+(LANG==="fa"?'تعداد نفرات':'PERSONNEL RANGE')+'</span><strong class="org-range"></strong></div>'+
+      '<div class="org-force-visual" aria-label="'+(LANG==="fa"?'نمایش نمادین بازهٔ تعداد نفرات':'Illustrative visualization of the personnel range')+'"><div class="org-force-head"><span class="org-force-title">'+(LANG==="fa"?'نمایش نمادین نیروها':'ILLUSTRATIVE FORCE SCALE')+'</span><span class="org-force-count" data-target="'+scaleCount+'">۰ / '+scaleCount+'</span></div><div class="soldier-grid">'+icons+'</div><p class="org-force-note">'+(LANG==="fa"?'آیکون‌ها مقیاس بصری هستند؛ بازهٔ نفرات در بالا نمایش داده شده و هر آیکون معادل تعداد مشخصی نفر نیست.':'Icons are illustrative only; the personnel range is shown above and each icon does not represent a fixed number of people.')+'</p></div>';
+    nd.querySelector('.org-name').textContent=name;
+    nd.querySelector('.org-name-en').textContent=it.nameEn;
+    nd.querySelector('.org-range').textContent=range;
     ctr.appendChild(nd);
   });
+  setupOrgScrollScale();
+}
+
+function setupOrgScrollScale(){
+  var nodes=$$(".org-scroll-node");
+  if(!nodes.length)return;
+  var reduced=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function update(){
+    var vh=window.innerHeight||800;
+    nodes.forEach(function(node){
+      var rect=node.getBoundingClientRect();
+      /* Fill icons as each white panel travels through the central reading zone. */
+      var progress=reduced?(rect.top<vh*.85?1:0):Math.max(0,Math.min(1,(vh*.86-rect.top)/(vh*.58)));
+      var icons=$$(".soldier-icon",node),count=node.querySelector(".org-force-count");
+      var visible=Math.max(0,Math.min(icons.length,Math.round(icons.length*progress)));
+      icons.forEach(function(icon,i){icon.classList.toggle("is-counted",i<visible)});
+      if(count){count.textContent=LANG==="fa"?(new Intl.NumberFormat('fa-IR').format(visible)+' / '+new Intl.NumberFormat('fa-IR').format(icons.length)):(visible+' / '+icons.length)}
+      node.classList.toggle("org-in-view",rect.top<vh*.78&&rect.bottom>vh*.18);
+      node.style.setProperty('--scroll-progress',String(progress));
+    });
+  }
+  var ticking=false;
+  function onScroll(){if(ticking)return;ticking=true;requestAnimationFrame(function(){update();ticking=false})}
+  window.addEventListener("scroll",onScroll,{passive:true});
+  window.addEventListener("resize",onScroll,{passive:true});
+  activeObservers.push({disconnect:function(){window.removeEventListener("scroll",onScroll);window.removeEventListener("resize",onScroll)}});
+  update();
 }
 
 /* Init */

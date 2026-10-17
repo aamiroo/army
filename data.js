@@ -65,9 +65,13 @@ var ranks = [
 
 /* Organizational hierarchy — data-driven, editable later */
 var hierarchyData = [
-  { level:"levels", name:"سرباز", nameEn:"Private", unit:"-", soldiers:"-", commander:"-", desc:"پایین‌ترین رکن سلسله‌مراتب" },
-  { level:"levels", name:"درجه‌دار", nameEn:"NCO", unit:"-", soldiers:"-", commander:"-", desc:"فرماندهی تیم و جوخه" },
-  { level:"levels", name:"افسر جزء", nameEn:"Junior Officer", unit:"-", soldiers:"-", commander:"-", desc:"فرماندهی یگان‌های کوچک" },
-  { level:"levels", name:"افسر ارشد", nameEn:"Senior Officer", unit:"-", soldiers:"-", commander:"-", desc:"فرماندهی واحدهای بزرگ" },
-  { level:"levels", name:"امیر", nameEn:"General Officer", unit:"-", soldiers:"-", commander:"-", desc:"عالی‌ترین فرماندهی" }
+  { id:"fire-team", level:"levels", name:"تیم آتش", nameEn:"Fire Team", rangeFa:"۲ تا ۴ نفر", rangeEn:"2–4 personnel", scale:6 },
+  { id:"squad", level:"levels", name:"جوخه", nameEn:"Squad", rangeFa:"۵ تا ۱۵ نفر", rangeEn:"5–15 personnel", scale:10 },
+  { id:"group", level:"levels", name:"گروه", nameEn:"Group", rangeFa:"۱۵ تا ۲۵ نفر", rangeEn:"15–25 personnel", scale:14 },
+  { id:"platoon", level:"levels", name:"دسته", nameEn:"Platoon", rangeFa:"حدود ۴۰ تا ۸۰ نفر", rangeEn:"Approximately 40–80 personnel", scale:18 },
+  { id:"company", level:"levels", name:"گروهان", nameEn:"Company", rangeFa:"حدود ۸۰ تا ۲۵۰ نفر", rangeEn:"Approximately 80–250 personnel", scale:22 },
+  { id:"battalion", level:"levels", name:"گردان", nameEn:"Battalion", rangeFa:"حدود ۳۰۰ تا ۱٬۰۰۰ نفر", rangeEn:"Approximately 300–1,000 personnel", scale:26 },
+  { id:"regiment", level:"levels", name:"هنگ", nameEn:"Regiment", rangeFa:"حدود ۱٬۰۰۰ تا ۵٬۵۰۰ نفر", rangeEn:"Approximately 1,000–5,500 personnel", scale:30 },
+  { id:"brigade", level:"levels", name:"تیپ", nameEn:"Brigade", rangeFa:"حدود ۶٬۰۰۰ تا ۱۰٬۰۰۰ نفر", rangeEn:"Approximately 6,000–10,000 personnel", scale:34 },
+  { id:"division", level:"levels", name:"لشکر", nameEn:"Division", rangeFa:"حدود ۱۰٬۰۰۰ تا ۲۵٬۰۰۰ نفر", rangeEn:"Approximately 10,000–25,000 personnel", scale:38 }
 ];
